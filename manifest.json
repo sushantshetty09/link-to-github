@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "LeetSync-Mini",
+  "name": "GfGSync-Mini",
   "version": "1.0.0",
-  "description": "Automatically push accepted LeetCode submissions to your GitHub repository.",
+  "description": "Automatically push accepted GeeksforGeeks practice submissions to your GitHub repository.",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
@@ -14,8 +14,9 @@
     "notifications"
   ],
   "host_permissions": [
-    "https://leetcode.com/*",
-    "https://leetcode.cn/*",
+    "https://www.geeksforgeeks.org/*",
+    "https://practice.geeksforgeeks.org/*",
+    "https://practiceapi.geeksforgeeks.org/*",
     "https://api.github.com/*"
   ],
   "background": {
@@ -24,19 +25,23 @@
   "content_scripts": [
     {
       "matches": [
-        "https://leetcode.com/*",
-        "https://leetcode.cn/*"
+        "https://www.geeksforgeeks.org/*",
+        "https://practice.geeksforgeeks.org/*"
       ],
-      "js": ["injected.js"],
+      "js": [
+        "injected.js"
+      ],
       "run_at": "document_start",
       "world": "MAIN"
     },
     {
       "matches": [
-        "https://leetcode.com/*",
-        "https://leetcode.cn/*"
+        "https://www.geeksforgeeks.org/*",
+        "https://practice.geeksforgeeks.org/*"
       ],
-      "js": ["content.js"],
+      "js": [
+        "content.js"
+      ],
       "run_at": "document_start"
     }
   ],
@@ -49,10 +54,12 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["injected.js"],
+      "resources": [
+        "injected.js"
+      ],
       "matches": [
-        "https://leetcode.com/*",
-        "https://leetcode.cn/*"
+        "https://www.geeksforgeeks.org/*",
+        "https://practice.geeksforgeeks.org/*"
       ]
     }
   ]

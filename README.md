@@ -1,48 +1,70 @@
-# LeetSync-Mini
+# GfGSync-Mini 🚀
 
-> **Last Updated:** 2026-08-28
+A lightweight, automated Chrome Manifest V3 extension that intercepts and syncs accepted **GeeksforGeeks** problem submissions directly to your GitHub repository.
 
-A Chrome extension that automatically pushes your accepted LeetCode submissions to a GitHub repository.
+---
 
-## Features
+## ✨ Features
 
-- 🚀 Auto-syncs accepted LeetCode solutions to GitHub
-- 🌐 Supports both `leetcode.com` and `leetcode.cn`
-- 🔔 Browser notifications on successful push
-- ⚙️ Easy configuration via popup UI
+- **⚡ Zero-Click Automatic Sync**: Automatically commits your accepted solutions upon reaching *"Problem Solved Successfully"* or *"Correct Answer"*.
+- **🌿 Dynamic Branch Support**: Automatically handles pushing to any specified branch (e.g. `GreeksofGreeks`, `greeksforgreeks`, or `main`), including auto-creating the branch on GitHub if it doesn't exist yet!
+- **🔍 Main-World Network Interception**: Directly captures API responses from `practiceapi.geeksforgeeks.org` via monkey-patched `fetch` and `XMLHttpRequest`.
+- **🛡️ Multi-Level Fallback**: Monaco editor extraction, Ace editor fallback, CodeMirror DOM inspection, and problem details API fallback.
+- **📁 Organized Structure**:
+  ```text
+  {Difficulty}/{slugified-title}/
+  ├── solution.{extension}
+  └── README.md
+  ```
+- **📅 Problem of the Day (POTD) Mirroring**: Optionally mirrors daily POTD solutions to `POTD/{YYYY-MM-DD}-{slug}.{extension}`.
+- **📊 Global Progress Tracking**: Automatically appends solved problems to a root `progress-log.md` table.
+- **🔒 Privacy & Security**: Personal Access Tokens (PAT) are stored locally in `chrome.storage.local` (never logged, never synced to cloud).
+- **⚠️ Defensive Error Handling**: Shows instant desktop alerts (`chrome.notifications`) on token issues (401), rate limits (403), repo not found (404), or auto-resolves SHA conflicts (409).
 
-## Installation
+---
 
-1. Clone or download this repository.
-2. Open Chrome and navigate to `chrome://extensions/`.
-3. Enable **Developer mode** (toggle in the top-right corner).
-4. Click **Load unpacked** and select the project folder.
-5. The **LeetSync-Mini** extension icon will appear in your toolbar.
+## 🛠️ Installation
 
-## Configuration
+1. Open Google Chrome and navigate to `chrome://extensions/`.
+2. Enable **Developer mode** in the top right corner.
+3. Click **Load unpacked** and select this directory (`leetcode to github` when on the `greeksforgreeks` branch).
+4. Pin the **GfGSync-Mini** extension to your toolbar.
 
-1. Click the extension icon in the toolbar.
-2. Enter your **GitHub Personal Access Token** (needs `repo` scope).
-3. Enter your **GitHub Username** and the **Repository Name** where solutions should be pushed.
-4. Save the settings.
+---
 
-## How It Works
+## ⚙️ Configuration
 
-| File | Role |
-|------|------|
-| `manifest.json` | Extension manifest (MV3) — permissions & entry points |
-| `background.js` | Service worker — handles GitHub API calls & push logic |
-| `content.js` | Content script — detects accepted submissions on LeetCode |
-| `injected.js` | Injected into page main world — intercepts GraphQL responses |
-| `popup.html` / `popup.js` | Extension popup UI for settings |
+1. Click the **GfGSync-Mini** icon in your browser toolbar.
+2. Enter your **GitHub Personal Access Token (PAT)**:
+   - Needs `repo` or `contents:write` permission.
+3. Enter your **Repo Owner** (e.g. `sushantshetty09`) and **Repo Name** (e.g. `DSA`).
+4. Enter your **Target Branch** (e.g. `GreeksofGreeks` or `greeksforgreeks`).
+5. Click **Test Connection** to verify credentials, then click **Save Settings**.
 
-## Permissions
+---
 
-- **storage** — saves your GitHub credentials locally
-- **scripting** — injects scripts into LeetCode pages
-- **notifications** — alerts you when a solution is successfully pushed
-- **Host permissions** — `leetcode.com`, `leetcode.cn`, `api.github.com`
+## 🎯 How It Works
 
-## License
+```mermaid
+sequenceDiagram
+    participant GFG as GeeksforGeeks
+    participant INJ as Injected Interceptor
+    participant CS as Content Script
+    participant BG as Service Worker
+    participant GH as GitHub API
 
-MIT
+    GFG->>GFG: User submits code
+    GFG->>INJ: Fetch/XHR to practiceapi.geeksforgeeks.org
+    INJ->>INJ: Detect "Problem Solved Successfully"
+    INJ->>CS: window.postMessage(GFGSYNC_ACCEPTED_SUBMISSION)
+    CS->>CS: Debounce (slug + codeHash) & Enrich tags
+    CS->>BG: chrome.runtime.sendMessage(GFG_SUBMISSION_ACCEPTED)
+    BG->>GH: Verify / Ensure target branch exists
+    BG->>GH: PUT /{Difficulty}/{slug}/solution.{ext}
+    BG->>GH: PUT /{Difficulty}/{slug}/README.md
+    opt POTD Active
+        BG->>GH: PUT /POTD/{Date}-{slug}.{ext}
+    end
+    BG->>GH: PUT /progress-log.md
+    BG->>User: Desktop Notification (Success)
+```
