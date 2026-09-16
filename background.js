@@ -182,7 +182,6 @@ async function ensureBranchExists(owner, repo, branch, token) {
 
     if (branchRes.status === 404) {
       console.log(`[GfGSync-Mini] Branch "${cleanBranch}" not found. Creating from repo default branch...`);
-      // 2. Fetch repository info for default branch
       const repoRes = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -195,7 +194,6 @@ async function ensureBranchExists(owner, repo, branch, token) {
       const repoData = await repoRes.json();
       const defaultBranch = repoData.default_branch || 'main';
 
-      // 3. Get SHA of default branch
       const refRes = await fetch(
         `https://api.github.com/repos/${owner}/${repo}/git/ref/heads/${encodeURIComponent(defaultBranch)}`,
         {
@@ -212,7 +210,6 @@ async function ensureBranchExists(owner, repo, branch, token) {
       const baseSha = refData?.object?.sha;
       if (!baseSha) return cleanBranch;
 
-      // 4. Create new branch ref
       const createRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/refs`, {
         method: 'POST',
         headers: {
@@ -334,39 +331,39 @@ function buildReadme(data) {
 
   const diffName = difficulty || 'Medium';
   const diffBadge =
-    diffName === 'School'
-      ? '⚪ School'
-      : diffName === 'Basic'
-        ? '🔵 Basic'
-        : diffName === 'Easy'
-          ? '🟢 Easy'
-          : diffName === 'Medium'
-            ? '🟡 Medium'
-            : diffName === 'Hard'
-              ? '🔴 Hard'
+    diffName === 'Easy'
+      ? '🟢 Easy'
+      : diffName === 'Medium'
+        ? '🟡 Medium'
+        : diffName === 'Hard'
+          ? '🔴 Hard'
+          : diffName === 'Basic'
+            ? '🔵 Basic'
+            : diffName === 'School'
+              ? '⚪ School'
               : diffName;
 
-  let md = `# [${title}](${gfgUrl})\n\n`;
-  md += `## Difficulty: ${diffBadge}\n\n`;
-
-  const stats = [];
-  if (points) stats.push(`**Points Awarded:** ${points}`);
-  if (accuracy) stats.push(`**Accuracy:** ${accuracy}`);
-  if (stats.length > 0) {
-    md += `${stats.join(' | ')}\n\n`;
-  }
+  let md = `# ${title || slug}\n\n`;
+  md += `**Difficulty:** ${diffBadge}\n\n`;
 
   if (Array.isArray(topicTags) && topicTags.length > 0) {
-    md += `### Topic Tags\n`;
-    md += `${topicTags.map((t) => `\`${t}\``).join(' ')}\n\n`;
+    md += `**Topics:** ${topicTags.map((t) => '`' + t + '`').join('  ')}\n\n`;
   }
 
   if (Array.isArray(companyTags) && companyTags.length > 0) {
-    md += `### Company Tags\n`;
-    md += `${companyTags.map((c) => `\`${c}\``).join(' ')}\n\n`;
+    md += `**Company Tags:** ${companyTags.map((c) => '`' + c + '`').join('  ')}\n\n`;
   }
 
-  md += `---\n*Auto-synced by [GfGSync-Mini](https://github.com/sushantshetty09/DSA)*\n`;
+  md += `**GeeksforGeeks Link:** [${gfgUrl}](${gfgUrl})\n\n`;
+
+  if (accuracy || points) {
+    md += `## Stats\n\n`;
+    md += `| Metric | Value |\n|--------|-------|\n`;
+    if (points) md += `| Points | ${points} |\n`;
+    if (accuracy) md += `| Accuracy | ${accuracy} |\n`;
+  }
+
+  md += `\n---\n*Auto-synced by [GfGSync-Mini](https://github.com/sushantshetty09/DSA)*\n`;
   return md;
 }
 
@@ -422,26 +419,26 @@ async function syncSubmissionToGitHub(submission) {
   const readmePath = `${problemFolder}/README.md`;
   const progressPath = `progress-log.md`;
 
-  const commitMsg = isPotd
-    ? `GfG POTD ${today}: ${title} (${diffFolder})`
-    : `GfG: ${title} (${diffFolder})`;
+  const solutionCommitMsg = isPotd
+    ? `POTD Solved: ${title} (${diffFolder})`
+    : `Solved: ${title} (${diffFolder})`;
+  const readmeCommitMsg = `docs: ${title}`;
 
   let success = false;
   let errorMsg = null;
   let commitUrl = null;
 
   try {
-    // Make sure target branch is valid and ready
     const targetBranch = await ensureBranchExists(settings.repoOwner, settings.repoName, settings.branch, settings.githubToken);
 
-    // 1. Push Solution File
+    // 1. Push Solution Code
     const existingSol = await getGitHubFile(settings.repoOwner, settings.repoName, solutionPath, settings.githubToken, targetBranch);
     const solResult = await putGitHubFile(
       settings.repoOwner,
       settings.repoName,
       solutionPath,
       code,
-      commitMsg,
+      solutionCommitMsg,
       settings.githubToken,
       targetBranch,
       existingSol?.sha || null
@@ -459,7 +456,7 @@ async function syncSubmissionToGitHub(submission) {
       settings.repoName,
       readmePath,
       readmeContent,
-      `docs: add README for ${title}`,
+      readmeCommitMsg,
       settings.githubToken,
       targetBranch,
       existingReadme?.sha || null
@@ -554,7 +551,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
         const repoData = await res.json();
         
-        // Also test branch
         let branchFound = true;
         if (branch) {
           const bRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/branches/${encodeURIComponent(branch.trim())}`, {
